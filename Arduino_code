@@ -1,0 +1,70 @@
+#include <DHT.h>                // DHT sensor library
+#include <LiquidCrystal.h>       // LCD library
+
+#define DHTPIN 2                // Pin for DHT sensor
+#define DHTTYPE DHT11           // DHT11 sensor type
+#define SOIL_SENSOR_PIN A0      // Pin for soil moisture sensor
+#define LDR_PIN A1              // Pin for LDR (Light sensor)
+#define RELAY_PIN 7             // Pin for relay (water pump control)
+#define BUZZER_PIN 8            // Pin for buzzer (optional)
+#define THRESHOLD_SOIL 400      // Threshold value for dry soil
+#define THRESHOLD_LIGHT 500     // Threshold value for light intensity
+
+DHT dht(DHTPIN, DHTTYPE);
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);  // LCD pins (if used)
+
+void setup() {
+  Serial.begin(9600);           // Start serial communication
+  dht.begin();                  // Initialize DHT sensor
+  lcd.begin(16, 2);             // Initialize LCD (optional)
+  
+  pinMode(SOIL_SENSOR_PIN, INPUT); 
+  pinMode(LDR_PIN, INPUT);
+  pinMode(RELAY_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+
+  digitalWrite(RELAY_PIN, LOW);  // Ensure relay is off initially
+  lcd.print("Smart Agriculture");
+  delay(2000);
+}
+
+void loop() {
+  // Read temperature, humidity, soil moisture, and light intensity
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+  int soilMoistureValue = analogRead(SOIL_SENSOR_PIN);
+  int lightIntensity = analogRead(LDR_PIN);
+
+  // Display the sensor values on LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Temp: ");
+  lcd.print(temperature);
+  lcd.print("C");
+  lcd.setCursor(0, 1);
+  lcd.print("Soil: ");
+  lcd.print(soilMoistureValue);
+  lcd.print(" L: ");
+  lcd.print(lightIntensity);
+
+  // Check soil moisture levels and control the water pump
+  if (soilMoistureValue > THRESHOLD_SOIL) {
+    digitalWrite(RELAY_PIN, HIGH);  // Turn on the water pump
+    tone(BUZZER_PIN, 1000);         // Sound buzzer (optional)
+    delay(2000);                    // Pump runs for 2 seconds
+    noTone(BUZZER_PIN);             // Stop buzzer
+    digitalWrite(RELAY_PIN, LOW);   // Turn off the pump
+  }
+
+  // Print sensor data to serial monitor
+  Serial.print("Temp: ");
+  Serial.print(temperature);
+  Serial.print(" C  Humidity: ");
+  Serial.print(humidity);
+  Serial.print(" %  Soil Moisture: ");
+  Serial.print(soilMoistureValue);
+  Serial.print("  Light Intensity: ");
+  Serial.println(lightIntensity);
+
+  delay(2000); // Wait before taking another reading
+}
